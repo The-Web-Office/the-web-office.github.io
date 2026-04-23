@@ -3,154 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebOffice Professional Suite</title>
-    
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
+    <title>Web Office | Suite Estática</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        :root { --primary: #2b579a; --bg: #f0f0f0; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        header { background: var(--primary); color: white; padding: 5px 20px; display: flex; justify-content: space-between; align-items: center; height: 45px; }
-        
-        .main-container { display: flex; flex-grow: 1; overflow: hidden; }
-        
-        /* Panel Lateral de Documentos */
-        .sidebar { width: 250px; background: #fff; border-right: 1px solid #ccc; display: flex; flex-direction: column; padding: 10px; }
-        .doc-list { flex-grow: 1; overflow-y: auto; }
-        .doc-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 0.9rem; }
-        .doc-item:hover { background: #f5f5f5; }
-
-        /* Área del Editor */
-        .editor-area { flex-grow: 1; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .config-bar { background: #fff; padding: 10px; border: 1px solid #ccc; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        
-        button { cursor: pointer; border: none; padding: 6px 12px; border-radius: 3px; font-weight: bold; }
-        .btn-blue { background: var(--primary); color: white; }
-        .btn-green { background: #217346; color: white; }
-        
-        #editor-container { flex-grow: 1; border: 1px solid #ccc; background: white; }
+        .app-screen { display: none; }
+        .app-screen.active { display: block; }
+        .slide-preview.active { border: 2px solid #2563eb; }
+        [contenteditable]:focus { outline: none; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 h-screen flex flex-col overflow-hidden">
 
-<header>
-    <div style="font-weight: bold;">🌐 WebOffice Pro <span style="font-weight: normal; opacity: 0.8;">| GitHub Edition</span></div>
-    <div id="status">Listo</div>
-</header>
-
-<div class="main-container">
-    <aside class="sidebar">
-        <button class="btn-blue" onclick="newDocument()" style="width: 100%; margin-bottom: 10px;">+ Nuevo Documento</button>
-        <div style="font-size: 0.8rem; color: #666; margin-bottom: 5px;">MIS DOCUMENTOS:</div>
-        <div id="docList" class="doc-list"></div>
-    </aside>
-
-    <main class="editor-area">
-        <div class="config-bar">
-            <input type="text" id="docTitle" placeholder="Nombre del archivo..." style="flex-grow: 1; padding: 5px;">
-            <input type="text" id="authorName" placeholder="Tu Nombre (Autor)" style="width: 150px; padding: 5px;">
-            <select id="exportFormat">
-                <option value="doc">Word (.doc)</option>
-                <option value="odt">LibreOffice (.odt)</option>
-            </select>
-            <button class="btn-green" onclick="exportFile()">Descargar</button>
+    <header class="bg-indigo-700 text-white shadow-lg z-20">
+        <div class="flex items-center justify-between px-6 py-3">
+            <div class="flex items-center gap-2">
+                <i data-lucide="layout-grid"></i>
+                <span class="font-bold text-xl tracking-tight">WebOffice</span>
+            </div>
+            <nav class="flex gap-4">
+                <button onclick="switchApp('writer')" class="hover:bg-indigo-600 px-3 py-1 rounded flex items-center gap-2 transition">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> Texto
+                </button>
+                <button onclick="switchApp('sheet')" class="hover:bg-indigo-600 px-3 py-1 rounded flex items-center gap-2 transition">
+                    <i data-lucide="table" class="w-4 h-4"></i> Hoja
+                </button>
+                <button onclick="switchApp('slides')" class="hover:bg-indigo-600 px-3 py-1 rounded flex items-center gap-2 transition">
+                    <i data-lucide="monitor" class="w-4 h-4"></i> Presentación
+                </button>
+            </nav>
         </div>
+    </header>
 
-        <div id="editor-container">
-            <textarea id="fullEditor"></textarea>
-        </div>
-    </main>
-</div>
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
+            <div class="p-4 border-b">
+                <button onclick="createNewFile()" class="w-full bg-indigo-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-indigo-700 transition">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuevo Archivo
+                </button>
+            </div>
+            <div id="fileList" class="flex-1 overflow-y-auto p-2 space-y-1">
+                </div>
+            <div class="p-4 bg-gray-50 text-xs text-gray-500 border-t">
+                Guardado en LocalStorage
+            </div>
+        </aside>
 
-<script>
-    let currentDocId = 'default';
+        <main class="flex-1 relative overflow-auto p-8">
+            
+            <section id="app-writer" class="app-screen active max-w-4xl mx-auto bg-white shadow-xl min-h-[100vh] p-12 border border-gray-100">
+                <div class="mb-4 border-b pb-2 flex gap-2 no-print">
+                    <button onclick="execCmd('bold')" class="p-2 hover:bg-gray-100 rounded" title="Negrita"><b>B</b></button>
+                    <button onclick="execCmd('italic')" class="p-2 hover:bg-gray-100 rounded" title="Cursiva"><i>I</i></button>
+                    <button onclick="execCmd('underline')" class="p-2 hover:bg-gray-100 rounded" title="Subrayado"><u>U</u></button>
+                    <select onchange="execCmd('fontSize', this.value)" class="bg-transparent border rounded px-2">
+                        <option value="3">Normal</option>
+                        <option value="5">Título</option>
+                        <option value="7">Grande</option>
+                    </select>
+                    <div class="flex-1"></div>
+                    <button onclick="exportTxt()" class="text-sm text-indigo-600 font-bold">Exportar .TXT</button>
+                </div>
+                <div id="writerCanvas" contenteditable="true" class="prose max-w-none focus:outline-none min-h-[80vh]">
+                    Empieza a escribir aquí...
+                </div>
+            </section>
 
-    // Inicializar el Editor con TODAS las opciones
-    tinymce.init({
-        selector: '#fullEditor',
-        height: '100%',
-        promotion: false,
-        branding: false,
-        plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code codesample fullscreen insertdatetime media table wordcount emoticons searchreplace',
-        toolbar: 'undo redo | fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table image link | emoticons charmap | removeformat | fullscreen preview',
-        content_style: 'body { font-family:Arial,sans-serif; font-size:14px; padding: 20px; max-width: 800px; margin: auto; }',
-        setup: function (editor) {
-            editor.on('input change', () => {
-                saveAuto();
-            });
+            <section id="app-sheet" class="app-screen max-w-full bg-white shadow-lg overflow-hidden border">
+                <div class="overflow-x-auto">
+                    <table id="sheetTable" class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border p-2 w-10"></th>
+                                <th class="border p-2">A</th><th class="border p-2">B</th><th class="border p-2">C</th><th class="border p-2">D</th><th class="border p-2">E</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sheetBody">
+                            </tbody>
+                    </table>
+                </div>
+                <div class="p-2 bg-gray-50 text-xs text-gray-400">Usa =SUM(A1,B1) para sumas básicas (simulado)</div>
+            </section>
+
+            <section id="app-slides" class="app-screen max-w-5xl mx-auto h-full flex flex-col">
+                <div class="flex gap-4 h-full">
+                    <div class="w-48 space-y-2" id="slideThumbs">
+                        </div>
+                    <div class="flex-1 bg-white shadow-2xl border aspect-video flex flex-col p-10 relative" id="activeSlide">
+                        <div id="slideContent" contenteditable="true" class="text-4xl font-bold text-center mt-20 outline-none">Título de Diapositiva</div>
+                        <button onclick="startPresentation()" class="absolute bottom-4 right-4 bg-black text-white p-2 rounded-full shadow-lg">
+                            <i data-lucide="play" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // --- ESTADO GLOBAL ---
+        let currentApp = 'writer';
+        let files = JSON.parse(localStorage.getItem('webOfficeFiles')) || [];
+        let currentFileId = null;
+
+        // --- GESTIÓN DE ARCHIVOS ---
+        function createNewFile() {
+            const name = prompt("Nombre del archivo:");
+            if (!name) return;
+            const newFile = {
+                id: Date.now(),
+                name: name,
+                type: currentApp,
+                content: currentApp === 'sheet' ? {} : (currentApp === 'slides' ? ['Nueva Diapositiva'] : '')
+            };
+            files.push(newFile);
+            saveFiles();
+            renderFileList();
+            loadFile(newFile.id);
         }
-    });
 
-    // Guardado Automático en el Navegador
-    function saveAuto() {
-        const data = {
-            title: document.getElementById('docTitle').value || 'Sin Titulo',
-            author: document.getElementById('authorName').value || 'WebOffice User',
-            content: tinymce.get('fullEditor').getContent()
-        };
-        localStorage.setItem('weboffice_' + currentDocId, JSON.stringify(data));
-        updateDocList();
-        document.getElementById('status').innerText = "Guardado a las " + new Date().toLocaleTimeString();
-    }
+        function saveFiles() {
+            localStorage.setItem('webOfficeFiles', JSON.stringify(files));
+        }
 
-    function updateDocList() {
-        const list = document.getElementById('docList');
-        list.innerHTML = '';
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.startsWith('weboffice_')) {
-                const data = JSON.parse(localStorage.getItem(key));
-                const item = document.createElement('div');
-                item.className = 'doc-item';
-                item.innerText = data.title;
-                item.onclick = () => loadDoc(key.replace('weboffice_', ''));
-                list.appendChild(item);
+        function renderFileList() {
+            const list = document.getElementById('fileList');
+            list.innerHTML = '';
+            files.filter(f => f.type === currentApp).forEach(file => {
+                const div = document.createElement('div');
+                div.className = `flex justify-between items-center p-2 rounded cursor-pointer ${currentFileId === file.id ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-100'}`;
+                div.innerHTML = `
+                    <span onclick="loadFile(${file.id})" class="truncate flex-1">${file.name}</span>
+                    <button onclick="deleteFile(${file.id})" class="text-gray-400 hover:text-red-500 ml-2"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function loadFile(id) {
+            currentFileId = id;
+            const file = files.find(f => f.id === id);
+            if (file.type === 'writer') {
+                document.getElementById('writerCanvas').innerHTML = file.content;
+            } else if (file.type === 'sheet') {
+                renderSheet(file.content);
+            } else if (file.type === 'slides') {
+                renderSlides(file.content);
+            }
+            renderFileList();
+        }
+
+        function deleteFile(id) {
+            files = files.filter(f => f.id !== id);
+            saveFiles();
+            renderFileList();
+        }
+
+        // --- NAVEGACIÓN ---
+        function switchApp(app) {
+            currentApp = app;
+            document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`app-${app}`).classList.add('active');
+            currentFileId = null;
+            renderFileList();
+        }
+
+        // --- PROCESADOR DE TEXTO ---
+        function execCmd(cmd, val = null) {
+            document.execCommand(cmd, false, val);
+            autoSaveWriter();
+        }
+        function autoSaveWriter() {
+            if (currentFileId) {
+                const file = files.find(f => f.id === currentFileId);
+                file.content = document.getElementById('writerCanvas').innerHTML;
+                saveFiles();
             }
         }
-    }
+        document.getElementById('writerCanvas').addEventListener('input', autoSaveWriter);
 
-    function loadDoc(id) {
-        currentDocId = id;
-        const data = JSON.parse(localStorage.getItem('weboffice_' + id));
-        document.getElementById('docTitle').value = data.title;
-        document.getElementById('authorName').value = data.author;
-        tinymce.get('fullEditor').setContent(data.content);
-    </main>
+        function exportTxt() {
+            const text = document.getElementById('writerCanvas').innerText;
+            const blob = new Blob([text], {type: 'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'documento.txt';
+            a.click();
+        }
 
-    function newDocument() {
-        currentDocId = Date.now().toString();
-        document.getElementById('docTitle').value = 'Nuevo Documento';
-        tinymce.get('fullEditor').setContent('');
-        saveAuto();
-    }
+        // --- HOJA DE CÁLCULO ---
+        function renderSheet(content) {
+            const body = document.getElementById('sheetBody');
+            body.innerHTML = '';
+            for(let i=1; i<=20; i++) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="bg-gray-100 border text-center text-xs text-gray-500">${i}</td>` + 
+                    ['A','B','C','D','E'].map(col => `
+                        <td class="border p-0">
+                            <input class="w-full p-2 outline-none focus:bg-blue-50" 
+                                   id="cell-${col}${i}" 
+                                   value="${content[col+i] || ''}" 
+                                   onchange="saveCell('${col}${i}', this.value)">
+                        </td>
+                    `).join('');
+                body.appendChild(tr);
+            }
+        }
+        function saveCell(coord, val) {
+            if (currentFileId) {
+                const file = files.find(f => f.id === currentFileId);
+                file.content[coord] = val;
+                saveFiles();
+            }
+        }
 
-    function exportFile() {
-        const title = document.getElementById('docTitle').value;
-        const author = document.getElementById('authorName').value;
-        const content = tinymce.get('fullEditor').getContent();
-        
-        const html = `
-        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-        <head>
-            <meta charset="utf-8">
-            <xml>
-                <o:DocumentProperties>
-                    <o:Author>${author}</o:Author>
-                    <o:AppName>WebOffice</o:AppName>
-                </o:DocumentProperties>
-            </xml>
-        </head>
-        <body>${content}</body>
-        </html>`;
+        // --- INICIALIZACIÓN ---
+        lucide.createIcons();
+        renderFileList();
+        // Cargar hoja vacía por defecto
+        renderSheet({});
 
-        const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-        saveAs(blob, title + ".doc");
-    }
-
-    window.onload = updateDocList;
-</script>
-
+    </script>
 </body>
 </html>
