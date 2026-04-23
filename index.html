@@ -3,129 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebOffice Suite</title>
+    <title>WebOffice Professional Suite</title>
+    
     <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
     <style>
-        :root { --primary: #2b579a; --dark: #1e1e1e; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #f3f2f1; }
+        :root { --primary: #2b579a; --bg: #f0f0f0; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Barra de herramientas superior */
-        header { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .logo { font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        header { background: var(--primary); color: white; padding: 5px 20px; display: flex; justify-content: space-between; align-items: center; height: 45px; }
         
-        /* Panel de control */
-        .toolbar { background: white; padding: 10px; display: flex; gap: 15px; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; }
-        .status-tag { font-size: 0.8rem; color: #666; font-style: italic; }
+        .main-container { display: flex; flex-grow: 1; overflow: hidden; }
         
-        button { cursor: pointer; padding: 8px 15px; border: none; border-radius: 2px; font-weight: 600; transition: 0.2s; }
-        .btn-save { background: #2b7d32; color: white; }
-        .btn-download { background: var(--primary); color: white; }
+        /* Panel Lateral de Documentos */
+        .sidebar { width: 250px; background: #fff; border-right: 1px solid #ccc; display: flex; flex-direction: column; padding: 10px; }
+        .doc-list { flex-grow: 1; overflow-y: auto; }
+        .doc-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 0.9rem; }
+        .doc-item:hover { background: #f5f5f5; }
+
+        /* Área del Editor */
+        .editor-area { flex-grow: 1; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .config-bar { background: #fff; padding: 10px; border: 1px solid #ccc; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         
-        select, input { padding: 6px; border: 1px solid #ccc; }
+        button { cursor: pointer; border: none; padding: 6px 12px; border-radius: 3px; font-weight: bold; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: #217346; color: white; }
         
-        #editor-wrapper { flex-grow: 1; padding: 20px; overflow-y: auto; }
-        .paper { max-width: 850px; margin: 0 auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        #editor-container { flex-grow: 1; border: 1px solid #ccc; background: white; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo">🌐 WebOffice <span style="font-weight: 200; font-size: 0.9rem;">| Suite Libre</span></div>
-    <div id="save-indicator" class="status-tag">Cambios guardados en local</div>
+    <div style="font-weight: bold;">🌐 WebOffice Pro <span style="font-weight: normal; opacity: 0.8;">| GitHub Edition</span></div>
+    <div id="status">Listo</div>
 </header>
 
-<div class="toolbar">
-    <input type="text" id="docTitle" placeholder="Nombre del archivo" value="Documento_Sin_Titulo">
-    <input type="text" id="authorName" placeholder="Autor" value="Usuario WebOffice">
-    
-    <select id="exportFormat">
-        <option value="doc">Microsoft Word (.doc)</option>
-        <option value="odt">OpenDocument (.odt)</option>
-        <option value="txt">Texto Plano (.txt)</option>
-    </select>
+<div class="main-container">
+    <aside class="sidebar">
+        <button class="btn-blue" onclick="newDocument()" style="width: 100%; margin-bottom: 10px;">+ Nuevo Documento</button>
+        <div style="font-size: 0.8rem; color: #666; margin-bottom: 5px;">MIS DOCUMENTOS:</div>
+        <div id="docList" class="doc-list"></div>
+    </aside>
 
-    <button class="btn-save" onclick="saveToLocal()">💾 Guardar en Navegador</button>
-    <button class="btn-download" onclick="exportFile()">📥 Descargar Archivo</button>
-    <button style="background:#d32f2f; color:white" onclick="clearLocal()">🗑️ Borrar Todo</button>
-</div>
+    <main class="editor-area">
+        <div class="config-bar">
+            <input type="text" id="docTitle" placeholder="Nombre del archivo..." style="flex-grow: 1; padding: 5px;">
+            <input type="text" id="authorName" placeholder="Tu Nombre (Autor)" style="width: 150px; padding: 5px;">
+            <select id="exportFormat">
+                <option value="doc">Word (.doc)</option>
+                <option value="odt">LibreOffice (.odt)</option>
+            </select>
+            <button class="btn-green" onclick="exportFile()">Descargar</button>
+        </div>
 
-<div id="editor-wrapper">
-    <div class="paper">
-        <textarea id="mainEditor"></textarea>
-    </div>
+        <div id="editor-container">
+            <textarea id="fullEditor"></textarea>
+        </div>
+    </main>
 </div>
 
 <script>
-    // Configuración del Editor
+    let currentDocId = 'default';
+
+    // Inicializar el Editor con TODAS las opciones
     tinymce.init({
-        selector: '#mainEditor',
-        plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
-        toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-        height: '75vh',
+        selector: '#fullEditor',
+        height: '100%',
+        promotion: false,
+        branding: false,
+        plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code codesample fullscreen insertdatetime media table wordcount emoticons searchreplace',
+        toolbar: 'undo redo | fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table image link | emoticons charmap | removeformat | fullscreen preview',
+        content_style: 'body { font-family:Arial,sans-serif; font-size:14px; padding: 20px; max-width: 800px; margin: auto; }',
         setup: function (editor) {
-            editor.on('init', function () {
-                const savedContent = localStorage.getItem('weboffice_content');
-                if (savedContent) editor.setContent(savedContent);
+            editor.on('input change', () => {
+                saveAuto();
             });
-            editor.on('change', () => { document.getElementById('save-indicator').innerText = "Cambios sin guardar..."; });
         }
     });
 
-    // Guardar en LocalStorage (Persistencia)
-    function saveToLocal() {
-        const content = tinymce.get('mainEditor').getContent();
-        localStorage.setItem('weboffice_content', content);
-        localStorage.setItem('weboffice_title', document.getElementById('docTitle').value);
-        localStorage.setItem('weboffice_author', document.getElementById('authorName').value);
-        document.getElementById('save-indicator').innerText = "✅ Todo guardado en el navegador";
+    // Guardado Automático en el Navegador
+    function saveAuto() {
+        const data = {
+            title: document.getElementById('docTitle').value || 'Sin Titulo',
+            author: document.getElementById('authorName').value || 'WebOffice User',
+            content: tinymce.get('fullEditor').getContent()
+        };
+        localStorage.setItem('weboffice_' + currentDocId, JSON.stringify(data));
+        updateDocList();
+        document.getElementById('status').innerText = "Guardado a las " + new Date().toLocaleTimeString();
     }
 
-    function clearLocal() {
-        if(confirm("¿Estás seguro de borrar el documento actual?")) {
-            localStorage.clear();
-            location.reload();
+    function updateDocList() {
+        const list = document.getElementById('docList');
+        list.innerHTML = '';
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('weboffice_')) {
+                const data = JSON.parse(localStorage.getItem(key));
+                const item = document.createElement('div');
+                item.className = 'doc-item';
+                item.innerText = data.title;
+                item.onclick = () => loadDoc(key.replace('weboffice_', ''));
+                list.appendChild(item);
+            }
         }
     }
 
-    // Exportación con Metadatos
-    function exportFile() {
-        const content = tinymce.get('mainEditor').getContent();
-        const title = document.getElementById('docTitle').value;
-        const author = document.getElementById('authorName').value;
-        const format = document.getElementById('exportFormat').value;
+    function loadDoc(id) {
+        currentDocId = id;
+        const data = JSON.parse(localStorage.getItem('weboffice_' + id));
+        document.getElementById('docTitle').value = data.title;
+        document.getElementById('authorName').value = data.author;
+        tinymce.get('fullEditor').setContent(data.content);
+    </main>
 
-        let mimeType = 'application/msword';
-        let extension = '.' + format;
-
-        // Construcción del documento con metadatos de WebOffice
-        const htmlContent = `
-            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head>
-                <meta charset="utf-8">
-                <xml>
-                    <o:DocumentProperties>
-                        <o:Title>${title}</o:Title>
-                        <o:Author>${author}</o:Author>
-                        <o:AppName>WebOffice</o:AppName>
-                        <o:Company>WebOffice Open Source</o:Company>
-                    </o:DocumentProperties>
-                </xml>
-            </head>
-            <body>${content}</body>
-            </html>`;
-
-        const blob = new Blob(['\ufeff', htmlContent], { type: mimeType });
-        saveAs(blob, title + extension);
+    function newDocument() {
+        currentDocId = Date.now().toString();
+        document.getElementById('docTitle').value = 'Nuevo Documento';
+        tinymce.get('fullEditor').setContent('');
+        saveAuto();
     }
 
-    // Cargar datos al abrir
-    window.onload = () => {
-        if(localStorage.getItem('weboffice_title')) 
-            document.getElementById('docTitle').value = localStorage.getItem('weboffice_title');
-        if(localStorage.getItem('weboffice_author')) 
-            document.getElementById('authorName').value = localStorage.getItem('weboffice_author');
-    };
+    function exportFile() {
+        const title = document.getElementById('docTitle').value;
+        const author = document.getElementById('authorName').value;
+        const content = tinymce.get('fullEditor').getContent();
+        
+        const html = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+            <meta charset="utf-8">
+            <xml>
+                <o:DocumentProperties>
+                    <o:Author>${author}</o:Author>
+                    <o:AppName>WebOffice</o:AppName>
+                </o:DocumentProperties>
+            </xml>
+        </head>
+        <body>${content}</body>
+        </html>`;
+
+        const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+        saveAs(blob, title + ".doc");
+    }
+
+    window.onload = updateDocList;
 </script>
 
 </body>
