@@ -3,143 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Office | Suite</title>
+    <title>Web Office Pro | GitHub Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         .app-screen { display: none; }
         .app-screen.active { display: block; }
-        .slide-preview.active { border: 2px solid #2563eb; }
+        .slide-thumb.active { border: 3px solid #4f46e5; background: #eef2ff; }
         [contenteditable]:focus { outline: none; }
     </style>
 </head>
-<body class="bg-gray-50 h-screen flex flex-col overflow-hidden">
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden">
 
-    <header class="bg-indigo-700 text-white shadow-lg z-20">
-        <div class="flex items-center justify-between px-6 py-3">
-            <div class="flex items-center gap-2">
-                <i data-lucide="layout-grid"></i>
-                <span class="font-bold text-xl tracking-tight">WebOffice</span>
-            </div>
-            <nav class="flex gap-4">
-                <button onclick="switchApp('writer')" class="hover:bg-indigo-600 px-3 py-1 rounded flex items-center gap-2 transition">
-                    <i data-lucide="file-text" class="w-4 h-4"></i> Texto
-                </button>
-                <button onclick="switchApp('sheet')" class="hover:bg-indigo-600 px-3 py-1 rounded flex items-center gap-2 transition">
-                    <i data-lucide="table" class="w-4 h-4"></i> Hoja
-                </button>
-                <button onclick="switchApp('slides')" class="hover:bg-indigo-600 px-3 py-1 rounded flex items-center gap-2 transition">
-                    <i data-lucide="monitor" class="w-4 h-4"></i> Presentación
-                </button>
-            </nav>
+    <header class="bg-slate-900 text-white px-6 py-2 flex justify-between items-center shadow-md">
+        <div class="flex items-center gap-2">
+            <div class="bg-indigo-600 p-1 rounded">🌐</div>
+            <span class="font-bold text-lg">WebOffice</span>
         </div>
+        <nav class="flex bg-slate-800 rounded-lg p-1">
+            <button onclick="switchApp('writer')" class="px-4 py-1 rounded-md hover:bg-slate-700 transition flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Documentos</button>
+            <button onclick="switchApp('sheet')" class="px-4 py-1 rounded-md hover:bg-slate-700 transition flex items-center gap-2"><i data-lucide="table" class="w-4 h-4"></i> Hojas</button>
+            <button onclick="switchApp('slides')" class="px-4 py-1 rounded-md hover:bg-slate-700 transition flex items-center gap-2"><i data-lucide="presentation" class="w-4 h-4"></i> Presentación</button>
+        </nav>
+        <div id="save-status" class="text-xs text-slate-400 font-mono">Autoguardado activo</div>
     </header>
 
     <div class="flex flex-1 overflow-hidden">
-        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
-            <div class="p-4 border-b">
-                <button onclick="createNewFile()" class="w-full bg-indigo-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-indigo-700 transition">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuevo Archivo
+        <aside class="w-64 bg-white border-r flex flex-col shadow-inner">
+            <div class="p-4">
+                <button onclick="createNewFile()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded font-semibold flex items-center justify-center gap-2 transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nuevo
                 </button>
             </div>
-            <div id="fileList" class="flex-1 overflow-y-auto p-2 space-y-1">
-                </div>
-            <div class="p-4 bg-gray-50 text-xs text-gray-500 border-t">
-                Guardado en LocalStorage
-            </div>
+            <div id="fileList" class="flex-1 overflow-y-auto px-2 space-y-1"></div>
         </aside>
 
-        <main class="flex-1 relative overflow-auto p-8">
+        <main class="flex-1 p-6 overflow-auto">
             
-            <section id="app-writer" class="app-screen active max-w-4xl mx-auto bg-white shadow-xl min-h-[100vh] p-12 border border-gray-100">
-                <div class="mb-4 border-b pb-2 flex gap-2 no-print">
-                    <button onclick="execCmd('bold')" class="p-2 hover:bg-gray-100 rounded" title="Negrita"><b>B</b></button>
-                    <button onclick="execCmd('italic')" class="p-2 hover:bg-gray-100 rounded" title="Cursiva"><i>I</i></button>
-                    <button onclick="execCmd('underline')" class="p-2 hover:bg-gray-100 rounded" title="Subrayado"><u>U</u></button>
-                    <select onchange="execCmd('fontSize', this.value)" class="bg-transparent border rounded px-2">
-                        <option value="3">Normal</option>
-                        <option value="5">Título</option>
-                        <option value="7">Grande</option>
-                    </select>
-                    <div class="flex-1"></div>
-                    <button onclick="exportTxt()" class="text-sm text-indigo-600 font-bold">Exportar .TXT</button>
+            <section id="app-writer" class="app-screen active max-w-4xl mx-auto">
+                <div class="bg-white border rounded-t-lg p-2 flex gap-2 items-center shadow-sm">
+                    <button onclick="format('bold')" class="p-2 hover:bg-gray-100 rounded"><b>B</b></button>
+                    <button onclick="format('italic')" class="p-2 hover:bg-gray-100 rounded"><i>I</i></button>
+                    <button onclick="format('underline')" class="p-2 hover:bg-gray-100 rounded"><u>U</u></button>
+                    <div class="h-6 w-[1px] bg-gray-300 mx-1"></div>
+                    <input type="text" id="writerAuthor" placeholder="Autor" class="text-sm border p-1 rounded w-32" value="Usuario WebOffice">
+                    <button onclick="downloadDocx()" class="ml-auto bg-blue-600 text-white px-3 py-1 rounded text-sm flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i> Descargar .DOCX
+                    </button>
                 </div>
-                <div id="writerCanvas" contenteditable="true" class="prose max-w-none focus:outline-none min-h-[80vh]">
-                    Empieza a escribir aquí...
+                <div id="writerCanvas" contenteditable="true" class="bg-white border-x border-b p-16 min-h-[80vh] shadow-sm outline-none prose max-w-none">
+                    Escribe tu documento aquí...
                 </div>
             </section>
 
-            <section id="app-sheet" class="app-screen max-w-full bg-white shadow-lg overflow-hidden border">
-                <div class="overflow-x-auto">
-                    <table id="sheetTable" class="w-full border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100">
-                                <th class="border p-2 w-10"></th>
-                                <th class="border p-2">A</th><th class="border p-2">B</th><th class="border p-2">C</th><th class="border p-2">D</th><th class="border p-2">E</th>
-                            </tr>
-                        </thead>
-                        <tbody id="sheetBody">
-                            </tbody>
-                    </table>
-                </div>
-                <div class="p-2 bg-gray-50 text-xs text-gray-400">Usa =SUM(A1,B1) para sumas básicas (simulado)</div>
-            </section>
-
-            <section id="app-slides" class="app-screen max-w-5xl mx-auto h-full flex flex-col">
-                <div class="flex gap-4 h-full">
-                    <div class="w-48 space-y-2" id="slideThumbs">
-                        </div>
-                    <div class="flex-1 bg-white shadow-2xl border aspect-video flex flex-col p-10 relative" id="activeSlide">
-                        <div id="slideContent" contenteditable="true" class="text-4xl font-bold text-center mt-20 outline-none">Título de Diapositiva</div>
-                        <button onclick="startPresentation()" class="absolute bottom-4 right-4 bg-black text-white p-2 rounded-full shadow-lg">
-                            <i data-lucide="play" class="w-4 h-4"></i>
-                        </button>
+            <section id="app-slides" class="app-screen h-full flex gap-4">
+                <div class="w-48 flex flex-col gap-2 overflow-y-auto" id="slideList">
+                    </div>
+                <div class="flex-1 flex flex-col gap-4">
+                    <div class="bg-white border p-2 flex justify-between">
+                        <button onclick="addSlide()" class="bg-green-600 text-white px-3 py-1 rounded text-sm">+ Añadir Diapositiva</button>
+                        <button onclick="deleteSlide()" class="bg-red-100 text-red-600 px-3 py-1 rounded text-sm italic">Eliminar Actual</button>
+                    </div>
+                    <div id="slideCanvas" contenteditable="true" class="bg-white aspect-video shadow-2xl border flex items-center justify-center text-4xl font-bold p-12 text-center overflow-hidden">
+                        Título de la Diapositiva
                     </div>
                 </div>
+            </section>
+
+            <section id="app-sheet" class="app-screen bg-white border shadow-sm rounded-lg overflow-hidden">
+                <div id="sheetGrid" class="grid grid-cols-6 border-b"></div>
             </section>
 
         </main>
     </div>
 
     <script>
-        // --- ESTADO GLOBAL ---
         let currentApp = 'writer';
-        let files = JSON.parse(localStorage.getItem('webOfficeFiles')) || [];
+        let files = JSON.parse(localStorage.getItem('webOfficeData')) || [];
         let currentFileId = null;
+        let activeSlideIndex = 0;
 
-        // --- GESTIÓN DE ARCHIVOS ---
+        // --- SISTEMA DE ARCHIVOS ---
         function createNewFile() {
-            const name = prompt("Nombre del archivo:");
+            const name = prompt("Nombre del nuevo archivo:");
             if (!name) return;
-            const newFile = {
+            const file = {
                 id: Date.now(),
                 name: name,
                 type: currentApp,
-                content: currentApp === 'sheet' ? {} : (currentApp === 'slides' ? ['Nueva Diapositiva'] : '')
+                author: "Usuario WebOffice",
+                content: currentApp === 'slides' ? ['Primera Diapositiva'] : ''
             };
-            files.push(newFile);
-            saveFiles();
-            renderFileList();
-            loadFile(newFile.id);
-        }
-
-        function saveFiles() {
-            localStorage.setItem('webOfficeFiles', JSON.stringify(files));
-        }
-
-        function renderFileList() {
-            const list = document.getElementById('fileList');
-            list.innerHTML = '';
-            files.filter(f => f.type === currentApp).forEach(file => {
-                const div = document.createElement('div');
-                div.className = `flex justify-between items-center p-2 rounded cursor-pointer ${currentFileId === file.id ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-100'}`;
-                div.innerHTML = `
-                    <span onclick="loadFile(${file.id})" class="truncate flex-1">${file.name}</span>
-                    <button onclick="deleteFile(${file.id})" class="text-gray-400 hover:text-red-500 ml-2"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
-                `;
-                list.appendChild(div);
-            });
-            lucide.createIcons();
+            files.push(file);
+            saveData();
+            loadFile(file.id);
         }
 
         function loadFile(id) {
@@ -147,21 +105,101 @@
             const file = files.find(f => f.id === id);
             if (file.type === 'writer') {
                 document.getElementById('writerCanvas').innerHTML = file.content;
-            } else if (file.type === 'sheet') {
-                renderSheet(file.content);
             } else if (file.type === 'slides') {
-                renderSlides(file.content);
+                activeSlideIndex = 0;
+                renderSlides();
             }
             renderFileList();
         }
 
-        function deleteFile(id) {
-            files = files.filter(f => f.id !== id);
-            saveFiles();
-            renderFileList();
+        function saveData() {
+            localStorage.setItem('webOfficeData', JSON.stringify(files));
+            document.getElementById('save-status').innerText = "Guardado: " + new Date().toLocaleTimeString();
         }
 
-        // --- NAVEGACIÓN ---
+        function renderFileList() {
+            const list = document.getElementById('fileList');
+            list.innerHTML = '';
+            files.filter(f => f.type === currentApp).forEach(file => {
+                const item = document.createElement('div');
+                item.className = `p-2 rounded cursor-pointer text-sm flex justify-between ${currentFileId === file.id ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'}`;
+                item.innerHTML = `<span onclick="loadFile(${file.id})">📄 ${file.name}</span>`;
+                list.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        // --- FUNCIONES WRITER ---
+        function format(cmd) { document.execCommand(cmd, false, null); }
+        
+        document.getElementById('writerCanvas').addEventListener('input', () => {
+            if (currentFileId) {
+                const file = files.find(f => f.id === currentFileId);
+                file.content = document.getElementById('writerCanvas').innerHTML;
+                saveData();
+            }
+        });
+
+        function downloadDocx() {
+            const content = document.getElementById('writerCanvas').innerHTML;
+            const author = document.getElementById('writerAuthor').value;
+            // Generamos un HTML con metadatos que Word reconoce
+            const header = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset='utf-8'><xml><o:DocumentProperties><o:Author>${author}</o:Author><o:AppName>WebOffice</o:AppName></o:DocumentProperties></xml></head>
+                <body>${content}</body></html>`;
+            const blob = new Blob(['\ufeff', header], { type: 'application/msword' });
+            saveAs(blob, (files.find(f => f.id === currentFileId)?.name || 'documento') + '.doc');
+        }
+
+        // --- FUNCIONES SLIDES ---
+        function addSlide() {
+            const file = files.find(f => f.id === currentFileId);
+            if (!file) return;
+            file.content.push("Nueva Diapositiva");
+            activeSlideIndex = file.content.length - 1;
+            renderSlides();
+            saveData();
+        }
+
+        function renderSlides() {
+            const file = files.find(f => f.id === currentFileId);
+            if (!file || file.type !== 'slides') return;
+            
+            const list = document.getElementById('slideList');
+            list.innerHTML = '';
+            file.content.forEach((text, i) => {
+                const thumb = document.createElement('div');
+                thumb.className = `slide-thumb bg-white aspect-video border rounded p-2 text-[8px] overflow-hidden cursor-pointer ${activeSlideIndex === i ? 'active' : ''}`;
+                thumb.innerText = text;
+                thumb.onclick = () => { activeSlideIndex = i; renderSlides(); };
+                list.appendChild(thumb);
+            });
+
+            const canvas = document.getElementById('slideCanvas');
+            canvas.innerText = file.content[activeSlideIndex];
+        }
+
+        document.getElementById('slideCanvas').addEventListener('input', (e) => {
+            const file = files.find(f => f.id === currentFileId);
+            if (file) {
+                file.content[activeSlideIndex] = e.target.innerText;
+                saveData();
+                // Actualizar miniatura sin re-renderizar todo
+                document.querySelectorAll('.slide-thumb')[activeSlideIndex].innerText = e.target.innerText;
+            }
+        });
+
+        function deleteSlide() {
+            const file = files.find(f => f.id === currentFileId);
+            if (file && file.content.length > 1) {
+                file.content.splice(activeSlideIndex, 1);
+                activeSlideIndex = 0;
+                renderSlides();
+                saveData();
+            }
+        }
+
         function switchApp(app) {
             currentApp = app;
             document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
@@ -170,62 +208,9 @@
             renderFileList();
         }
 
-        // --- PROCESADOR DE TEXTO ---
-        function execCmd(cmd, val = null) {
-            document.execCommand(cmd, false, val);
-            autoSaveWriter();
-        }
-        function autoSaveWriter() {
-            if (currentFileId) {
-                const file = files.find(f => f.id === currentFileId);
-                file.content = document.getElementById('writerCanvas').innerHTML;
-                saveFiles();
-            }
-        }
-        document.getElementById('writerCanvas').addEventListener('input', autoSaveWriter);
-
-        function exportTxt() {
-            const text = document.getElementById('writerCanvas').innerText;
-            const blob = new Blob([text], {type: 'text/plain'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'documento.txt';
-            a.click();
-        }
-
-        // --- HOJA DE CÁLCULO ---
-        function renderSheet(content) {
-            const body = document.getElementById('sheetBody');
-            body.innerHTML = '';
-            for(let i=1; i<=20; i++) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="bg-gray-100 border text-center text-xs text-gray-500">${i}</td>` + 
-                    ['A','B','C','D','E'].map(col => `
-                        <td class="border p-0">
-                            <input class="w-full p-2 outline-none focus:bg-blue-50" 
-                                   id="cell-${col}${i}" 
-                                   value="${content[col+i] || ''}" 
-                                   onchange="saveCell('${col}${i}', this.value)">
-                        </td>
-                    `).join('');
-                body.appendChild(tr);
-            }
-        }
-        function saveCell(coord, val) {
-            if (currentFileId) {
-                const file = files.find(f => f.id === currentFileId);
-                file.content[coord] = val;
-                saveFiles();
-            }
-        }
-
-        // --- INICIALIZACIÓN ---
+        // Inicio
         lucide.createIcons();
         renderFileList();
-        // Cargar hoja vacía por defecto
-        renderSheet({});
-
     </script>
 </body>
 </html>
